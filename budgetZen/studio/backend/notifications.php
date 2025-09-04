@@ -78,4 +78,24 @@ switch ($action) {
     default:
         echo json_encode(["status" => "error", "message" => "Invalid action"]);
 }
+
+
+/*   polling notifications
+<?php
+require "db.php"; requireLogin();
+$userId = $_SESSION['user_id'];
+$sinceId = isset($_GET['sinceId']) ? (int)$_GET['sinceId'] : 0;
+
+$stmt = $pdo->prepare("SELECT id, kind, message, ref_id, created_at
+                       FROM notifications
+                       WHERE user_id=? AND id > ?
+                       ORDER BY id ASC LIMIT 50");
+$stmt->execute([$userId, $sinceId]);
+$rows = $stmt->fetchAll();
+
+echo json_encode(["ok"=>true, "items"=>$rows, "lastId" => count($rows) ? end($rows)['id'] : $sinceId]);
+
+*/
+
+
 ?>
