@@ -1,31 +1,38 @@
 <?php
-header("Content-Type: application/json");
-include 'config.php';
+include 'db_connect.php';
 
-$data = json_decode(file_get_contents("php://input"), true);
+$data = json_decode(file_get_contents("php://input"));
 
-$username = $data["username"];
-$email    = $data["email"];
-$password = password_hash($data["password"], PASSWORD_BCRYPT);
+$response = array();
 
-// Check if user already exists
-$check = $conn->prepare("SELECT id FROM users WHERE email=? OR username=?");
-$check->bind_param("ss", $email, $username);
-$check->execute();
-$result = $check->get_result();
-
-if ($result->num_rows > 0) {
-    echo json_encode(["status" => "error", "message" => "User already exists"]);
-    exit();
-}
-
-// Insert user
-$stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-$stmt->bind_param("sss", $username, $email, $password);
-
-if ($stmt->execute()) {
-    echo json_encode(["status" => "success", "message" => "User registered successfully"]);
+if(isset($data->name) && isset($data->email) && isset($data->password)) {
+    $name = $data->name;
+    $email = $data->email;
+    $password = password_hash($data->password, PASSWORD_BCRYPT);
+    
+    // Check if email already exists
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+    
+    if($user) {
+        $response['success'] = false;
+        $response['message'] = 'Email already registered';
+    } else {
+        // Insert new user
+        $stmt = $pdo->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+        if($stmt->execute([$name, $email, $password])) {
+            $response['success'] = true;
+            $response['message'] = 'Registration successful! Please login.';
+        } else {
+            $response['success'] = false;
+            $response['message'] = 'Registration failed';
+        }
+    }
 } else {
-    echo json_encode(["status" => "error", "message" => "Registration failed"]);
+    $response['success'] = false;
+    $response['message'] = 'Please fill all required fields';
 }
+
+echo json_encode($response);
 ?>
